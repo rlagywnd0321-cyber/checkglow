@@ -3,6 +3,9 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const url = require('url');
+const axios = require('axios');
+const cheerio = require('cheerio');
+const iconv = require('iconv-lite');
 
 // Keywords that indicate the event has ended
 const ENDED_KEYWORDS = [
@@ -18,8 +21,8 @@ const ENDED_KEYWORDS = [
   "종료 안내"
 ];
 
-// Helper function to fetch page with redirect handling using built-in Node modules (Zero Dependencies)
-function fetchPage(targetUrl, maxRedirects = 5) {
+// Helper function to fetch page with redirect handling (built-in Node modules)
+function checkUrlHealth(targetUrl, maxRedirects = 5) {
   return new Promise((resolve, reject) => {
     if (maxRedirects < 0) {
       return reject(new Error('Too many redirects'));
@@ -50,14 +53,13 @@ function fetchPage(targetUrl, maxRedirects = 5) {
         if (redirectUrl.includes('/error') || redirectUrl.includes('/404') || redirectUrl === parsedUrl.protocol + '//' + parsedUrl.hostname + '/') {
           return resolve({ statusCode: res.statusCode, isRedirectedToHomeOrError: true, body: '' });
         }
-        return fetchPage(redirectUrl, maxRedirects - 1).then(resolve).catch(reject);
+        return checkUrlHealth(redirectUrl, maxRedirects - 1).then(resolve).catch(reject);
       }
 
       let data = '';
       res.on('data', (chunk) => {
         data += chunk;
-        // Limit parsing to 1MB to avoid out-of-memory errors
-        if (data.length > 1024 * 1024) {
+        if (data.length > 1024 * 1024) { // Limit to 1MB
           req.destroy();
         }
       });
@@ -84,46 +86,230 @@ function fetchPage(targetUrl, maxRedirects = 5) {
   });
 }
 
-async function validateEvents() {
+// Function to resolve Ppomppu view_homepage redirector link
+async function resolvePpomppuRedirect(redirectUrl) {
+  try {
+    const res = await axios.head(redirectUrl, {
+      maxRedirects: 0,
+      validateStatus: (status) => status >= 200 && status < 400,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    if (res.headers.location) {
+      return res.headers.location;
+    }
+  } catch (e) {
+    if (e.response && e.response.headers && e.response.headers.location) {
+      return e.response.headers.location;
+    }
+  }
+  return null;
+}
+
+// Deduce Category based on target URL domain
+function deduceCategory(domain) {
+  const d = domain.toLowerCase();
+  if (d.includes('naver') || d.includes('daum') || d.includes('nate')) return 'portal';
+  if (d.includes('gmarket') || d.includes('11st') || d.includes('auction') || d.includes('coupang') || d.includes('ssg') || d.includes('lotteon') || d.includes('tmon') || d.includes('wemakeprice')) return 'shopping';
+  if (d.includes('toss') || d.includes('shinhan') || d.includes('kb') || d.includes('hana') || d.includes('woori') || d.includes('payco') || d.includes('kakao')) return 'finance';
+  if (d.includes('oliveyoung') || d.includes('happypoint') || d.includes('lpoint') || d.includes('hpoint') || d.includes('gs25') || d.includes('cu')) return 'lifestyle';
+  return 'lifestyle'; // default daily life
+}
+
+// Deduce Company Name based on domain or host
+function deduceCompany(domain) {
+  const d = domain.toLowerCase();
+  if (d.includes('naver')) return '네이버';
+  if (d.includes('gmarket')) return 'G마켓';
+  if (d.includes('11st')) return '11번가';
+  if (d.includes('toss')) return '토스';
+  if (d.includes('kbstar') || d.includes('kbcard')) return 'KB금융';
+  if (d.includes('oliveyoung')) return '올리브영';
+  if (d.includes('happypoint')) return '해피포인트';
+  if (d.includes('lpoint')) return '롯데 엘포인트';
+  if (d.includes('shinhan')) return '신한금융';
+  if (d.includes('payco')) return '페이코';
+  if (d.includes('coupang')) return '쿠팡';
+  
+  // Extract main name from domain (e.g. "something.com" -> "something")
+  const parts = domain.split('.');
+  if (parts.length >= 2) {
+    const name = parts[parts.length - 2];
+    return name.toUpperCase();
+  }
+  return domain;
+}
+
+// Scrape new attendance events from Ppomppu Event board
+async function scrapeNewEvents() {
+  console.log("Scraping Ppomppu Event board for new daily check-ins...");
+  const newEvents = [];
+  
+  try {
+    const res = await axios.get('https://www.ppomppu.co.kr/zboard/zboard.php?id=evt', {
+      responseType: 'arraybuffer',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    
+    // Decode EUC-KR HTML content
+    const html = iconv.decode(Buffer.from(res.data), 'euc-kr');
+    const $ = cheerio.load(html);
+    
+    const postLinks = [];
+    
+    // Select post title elements
+    $('td.list_title a').each((i, el) => {
+      const titleText = $(el).text().trim();
+      const href = $(el).attr('href');
+      
+      // Match keywords indicating attendance checks
+      if ((titleText.includes("출석") || titleText.includes("출체") || titleText.includes("출첵") || titleText.includes("매일")) && href) {
+        const fullUrl = url.resolve('https://www.ppomppu.co.kr/zboard/zboard.php?id=evt', href);
+        // Extract post ID
+        const urlParams = new URLSearchParams(fullUrl.split('?')[1]);
+        const postId = urlParams.get('no');
+        
+        if (postId) {
+          postLinks.push({ id: postId, title: titleText, url: fullUrl });
+        }
+      }
+    });
+
+    console.log(`Found ${postLinks.length} matching attendance posts on frontpage.`);
+    
+    // Scrape details for up to 5 matching threads to prevent rate limiting
+    for (const post of postLinks.slice(0, 5)) {
+      console.log(`Parsing details of post: "${post.title}"...`);
+      try {
+        const postRes = await axios.get(post.url, {
+          responseType: 'arraybuffer',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          }
+        });
+        
+        const postHtml = iconv.decode(Buffer.from(postRes.data), 'euc-kr');
+        const $post = cheerio.load(postHtml);
+        
+        let targetUrl = null;
+        
+        // 1. Try to find the homepage redirect link
+        const homepageBtn = $post('a[onclick*="view_homepage"]');
+        if (homepageBtn.length > 0) {
+          const onclickAttr = homepageBtn.attr('onclick');
+          const match = onclickAttr.match(/view_homepage\.php\?no=\d+&id=\w+/);
+          if (match) {
+            const redirectPath = match[0];
+            const fullRedirectUrl = `https://www.ppomppu.co.kr/zboard/${redirectPath}`;
+            console.log(`Found homepage redirector: ${fullRedirectUrl}`);
+            targetUrl = await resolvePpomppuRedirect(fullRedirectUrl);
+          }
+        }
+        
+        // 2. If no homepage link, scan post body for external links
+        if (!targetUrl) {
+          $post('.wordbreak a, #writeContents a').each((i, el) => {
+            const linkHref = $post(el).attr('href');
+            if (linkHref && linkHref.startsWith('http') && !linkHref.includes('ppomppu.co.kr')) {
+              targetUrl = linkHref;
+              return false; // break loop
+            }
+          });
+        }
+
+        if (targetUrl) {
+          console.log(`   Discovered target event URL: ${targetUrl}`);
+          const parsedTarget = url.parse(targetUrl);
+          const domain = parsedTarget.hostname || '';
+          const company = deduceCompany(domain);
+          const category = deduceCategory(domain);
+          
+          newEvents.push({
+            id: `scraped-${post.id}`,
+            title: post.title.replace(/\[[^\]]+\]/g, '').trim(), // Clean bracket tags like [출석]
+            company: company,
+            category: category,
+            url: targetUrl,
+            reward: "포인트 / 이벤트 리워드",
+            logo: company.charAt(0)
+          });
+        }
+      } catch (err) {
+        console.error(`⚠️ Failed to parse thread ${post.id}: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    console.error(`⚠️ Failed to scrape Ppomppu board: ${err.message}`);
+  }
+  
+  return newEvents;
+}
+
+// Main Runner
+async function run() {
   const filePath = path.join(__dirname, 'data.json');
   if (!fs.existsSync(filePath)) {
     console.error("data.json not found!");
     process.exit(1);
   }
 
-  let events = [];
+  let dbEvents = [];
   try {
-    events = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    dbEvents = JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (e) {
     console.error("Failed to parse data.json", e);
     process.exit(1);
   }
 
-  console.log(`Starting health check for ${events.length} events...`);
+  // 1. Scrape new events from Ppomppu
+  const newlyScraped = await scrapeNewEvents();
+  console.log(`Scraped ${newlyScraped.length} events from community.`);
+
+  // 2. Merge lists (avoiding duplicates based on URL hostname/path)
+  const mergedEvents = [...dbEvents];
+  for (const newEv of newlyScraped) {
+    const isDuplicate = mergedEvents.some(existing => {
+      // Normalize URLs by comparing without protocol & trailing slash
+      const normExist = existing.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      const normNew = newEv.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      return normExist === normNew || existing.id === newEv.id;
+    });
+
+    if (!isDuplicate) {
+      console.log(`➕ Adding new event to list: [${newEv.company}] ${newEv.title}`);
+      mergedEvents.push(newEv);
+    }
+  }
+
+  // 3. Health check the entire merged list
+  console.log(`Starting health check for total ${mergedEvents.length} events...`);
   const activeEvents = [];
 
-  for (const event of events) {
+  for (const event of mergedEvents) {
     console.log(`Checking [${event.company}] ${event.title}...`);
     try {
-      const res = await fetchPage(event.url);
+      const res = await checkUrlHealth(event.url);
       
       if (res.statusCode === 404) {
-        console.log(`❌ Removed: Page returned 404 Not Found.`);
+        console.log(`   ❌ Removed: Page returned 404 Not Found.`);
         continue;
       }
       
       if (res.isRedirectedToHomeOrError) {
-        console.log(`❌ Removed: Redirected to main home or error page.`);
+        console.log(`   ❌ Removed: Redirected to main home or error page.`);
         continue;
       }
 
-      // Check for ended keywords in body
+      // Check ended keywords
       let hasEndedKeyword = false;
       const lowerBody = res.body.toLowerCase();
       for (const keyword of ENDED_KEYWORDS) {
         if (lowerBody.includes(keyword.toLowerCase())) {
           hasEndedKeyword = true;
-          console.log(`❌ Removed: Found ended keyword "${keyword}".`);
+          console.log(`   ❌ Removed: Found ended keyword "${keyword}".`);
           break;
         }
       }
@@ -132,23 +318,21 @@ async function validateEvents() {
         continue;
       }
 
-      // Keep event as active
-      console.log(`   Alive (Status ${res.statusCode})`);
+      console.log(`   ✅ Alive (Status ${res.statusCode})`);
       activeEvents.push(event);
 
     } catch (err) {
-      // If requests fail due to SSL, bot block (403), or Timeout, we KEEP it for user safety.
-      // This prevents false-positive deletions of alive app events.
-      console.log(`⚠️ Alert: Request failed (${err.message}). Keeping event for safety.`);
+      // Keep if server blocks request or timeouts to prevent false-positives
+      console.log(`   ⚠️ Alert: Request failed (${err.message}). Keeping event for safety.`);
       activeEvents.push(event);
     }
   }
 
-  console.log(`Health check complete. Active events: ${activeEvents.length} / ${events.length}`);
+  console.log(`Health check complete. Active events: ${activeEvents.length} / ${mergedEvents.length}`);
   
   // Write filtered active events back to data.json
   fs.writeFileSync(filePath, JSON.stringify(activeEvents, null, 2), 'utf8');
   console.log("Updated data.json successfully!");
 }
 
-validateEvents();
+run();
