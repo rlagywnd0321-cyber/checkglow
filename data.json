@@ -43,5 +43,113 @@
     "url": "https://m.lpoint.com",
     "reward": "L.POINT (즉시 적립)",
     "logo": "LP"
+  },
+  {
+    "id": "scraped-event2-106784",
+    "title": "우리말 겨루기 시청자 퀴즈(~23:00까지)",
+    "company": "CO",
+    "category": "finance",
+    "url": "https://program.kbs.co.kr/1tv/culture/woorimal/pc/board.html?smenu=233290&bbs_loc=T2003-1181-04-140364,list,none,1,0",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "C"
+  },
+  {
+    "id": "scraped-event2-106782",
+    "title": "6월엔 누구나 얼마에요 홍보대사(매일 선착순 컴포즈커피 금액권, 추천 구매 시 100% 신세계상품권)",
+    "company": "CO",
+    "category": "lifestyle",
+    "url": "https://www.iquest.co.kr/event/share_event.do",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "C"
+  },
+  {
+    "id": "scraped-event2-106776",
+    "title": "유튜브 초성 퀴즈 이벤트//배스킨 더블주니어(~6/24)",
+    "company": "YOUTUBE",
+    "category": "lifestyle",
+    "url": "https://youtube.com/shorts/it8w2kDVXw0?feature=share",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "Y"
+  },
+  {
+    "id": "scraped-event2-106766",
+    "title": "2026 월드컵 전국 주요 응원 스팟은? 매일 응원 댓글을 남겨주세요! (신세계상품권)",
+    "company": "네이버",
+    "category": "portal",
+    "url": "https://blog.naver.com/view_h/224316440626",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "네"
+  },
+  {
+    "id": "scraped-event2-106754",
+    "title": "한입 퀴즈 참여 인증 이벤트(6.17~6.26)",
+    "company": "GO",
+    "category": "lifestyle",
+    "url": "https://www.foodsafetykorea.go.kr/portal/board/boardDetail.do?menu_no=4447&menu_grp=MENU_NEW05&bbs_no=eventbbs&ntctxt_no=1150873",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "G"
+  },
+  {
+    "id": "scraped-event2-106718",
+    "title": "식품안전 퀴즈(~6.24., 250명 추첨 커피쿠폰)",
+    "company": "네이버",
+    "category": "portal",
+    "url": "https://form.naver.com/response/gWKq6Z1Za0wHa2gp5dLBYA",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "네"
+  },
+  {
+    "id": "scraped-event2-106688",
+    "title": "유튜브 퀴즈 이벤트(구독, 댓글, 퀴즈풀면 선물을 드려요! (6월 14일까지!!",
+    "company": "CO",
+    "category": "lifestyle",
+    "url": "https://eventworld.co.kr/busan_edu_tv",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "C"
+  },
+  {
+    "id": "scraped-event2-106639",
+    "title": "건강한 하루 루틴 챌린지(~6/9)",
+    "company": "INSTAGRAM",
+    "category": "lifestyle",
+    "url": "https://www.instagram.com/p/DYyENgAE0bN/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "I"
+  },
+  {
+    "id": "scraped-event2-106623",
+    "title": "OX 퀴즈 커피쿠폰",
+    "company": "OR",
+    "category": "lifestyle",
+    "url": "https://korean.visitkorea.or.kr/detail/event_detail.do?cotid=315943ff-7b7e-4039-8946-e70fdee5ee50",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "O"
+  },
+  {
+    "id": "scraped-event2-106622",
+    "title": "6월 출석체크",
+    "company": "G마켓",
+    "category": "shopping",
+    "url": "http://promotion.gmarket.co.kr/Event/Pluszone.asp",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "G"
+  },
+  {
+    "id": "scraped-event2-106608",
+    "title": "초간단 퀴즈 이벤트! 투썸 상품권 1만원권 200명! (~6/9)",
+    "company": "네이버",
+    "category": "portal",
+    "url": "https://blog.naver.com/pro_nps/224296734496",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "네"
+  },
+  {
+    "id": "scraped-event2-106603",
+    "title": "7일 연속 출석체크 이벤트",
+    "company": "CO",
+    "category": "lifestyle",
+    "url": "https://www.playstory.co.kr/promotions/link/60",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "C"
   }
 ]
