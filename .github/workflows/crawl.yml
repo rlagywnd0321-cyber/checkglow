@@ -21,8 +21,9 @@ jobs:
         with:
           node-version: '18'
 
-      # Since our crawler.js has zero external npm dependencies, 
-      # we can run it immediately without npm install!
+      - name: Install dependencies
+        run: npm install
+
       - name: Run event crawler validation
         run: node crawler.js
 
