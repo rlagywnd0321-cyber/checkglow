@@ -201,8 +201,8 @@ async function scrapeNewEvents() {
         const html = iconv.decode(Buffer.from(res.data), 'euc-kr');
         const $ = cheerio.load(html);
         
-        // Select post title elements
-        $('td.list_title a').each((i, el) => {
+        // Select post title elements (supports new baseList-title template and old list_title template)
+        $('.baseList-title, td.list_title a').each((i, el) => {
           const titleText = $(el).text().trim();
           const href = $(el).attr('href');
           
