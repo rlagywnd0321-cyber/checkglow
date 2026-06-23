@@ -1,0 +1,74 @@
+[
+  {
+    "id": "naver-pay",
+    "title": "네이버페이 혜택 클릭",
+    "company": "네이버",
+    "category": "portal",
+    "url": "https://m-benefit.pay.naver.com/benefit/click",
+    "reward": "네이버페이 포인트 (랜덤)",
+    "logo": "N"
+  },
+  {
+    "id": "gmarket",
+    "title": "지마켓 데일리 룰렛",
+    "company": "G마켓",
+    "category": "shopping",
+    "url": "https://m.gmarket.co.kr/event/attendance",
+    "reward": "스마일캐시 / 할인쿠폰",
+    "logo": "G"
+  },
+  {
+    "id": "eleven-st",
+    "title": "11번가 매일 출석체크",
+    "company": "11번가",
+    "category": "shopping",
+    "url": "https://m.11st.co.kr/MW/Html/nc/AttendanceMain.html",
+    "reward": "11클로버 / 포인트",
+    "logo": "11"
+  },
+  {
+    "id": "toss-benefit",
+    "title": "토스 만보기 & 혜택",
+    "company": "토스",
+    "category": "finance",
+    "url": "https://toss.im/_m/daily-benefit",
+    "reward": "토스 포인트 (매일)",
+    "logo": "T"
+  },
+  {
+    "id": "kb-starbank",
+    "title": "KB국민 스타뱅킹 출석",
+    "company": "KB국민은행",
+    "category": "finance",
+    "url": "https://www.kbstar.com",
+    "reward": "스타프렌즈 포인트리",
+    "logo": "KB"
+  },
+  {
+    "id": "olive-young",
+    "title": "올리브영 매일 셔플",
+    "company": "올리브영",
+    "category": "lifestyle",
+    "url": "https://m.oliveyoung.co.kr",
+    "reward": "올영 기프트카드 / 쿠폰",
+    "logo": "OY"
+  },
+  {
+    "id": "happy-point",
+    "title": "해피포인트 해피앱 룰렛",
+    "company": "SPC",
+    "category": "lifestyle",
+    "url": "https://www.happypointcard.com",
+    "reward": "해피포인트 / 경품",
+    "logo": "HP"
+  },
+  {
+    "id": "lpoint",
+    "title": "엘포인트 엘박스 열기",
+    "company": "롯데 L.POINT",
+    "category": "lifestyle",
+    "url": "https://m.lpoint.com",
+    "reward": "L.POINT (즉시 적립)",
+    "logo": "LP"
+  }
+]

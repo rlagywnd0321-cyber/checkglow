@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CheckGlow - 일일 출석체크</title>
+  <!-- Google Fonts: Plus Jakarta Sans for UI, Pretendard for Korean -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="events.css">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <!-- Mobile App Frame Container -->
+  <div class="app-container">
+    
+    <!-- App Header -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-logo-dot"></span>
+        <h1>CheckGlow</h1>
+      </div>
+      <button id="btn-sync" class="icon-btn" title="동기화 및 새로고침" aria-label="새로고침">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+      </button>
+    </header>
+
+    <!-- App Content Scroll Area -->
+    <main class="app-content">
+      
+      <!-- HOME VIEW -->
+      <div id="view-home" class="view-section">
+        <!-- Stats Dashboard Card -->
+        <section class="stats-card">
+          <div class="stats-header">
+            <span class="stats-title">오늘의 출석 현황</span>
+            <span class="stats-count" id="progress-text">0 / 0</span>
+          </div>
+          
+          <!-- Progress Bar -->
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+          </div>
+
+          <div class="stats-footer">
+            <div class="stat-item">
+              <span class="stat-label">예상 획득</span>
+              <span class="stat-value" id="reward-estimate">0개 항목</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-label">남은 출석</span>
+              <span class="stat-value text-highlight" id="remaining-count">0개</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Search & Filter Controls -->
+        <section class="controls-section">
+          <!-- Search Bar -->
+          <div class="search-bar">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="search-input" placeholder="이벤트 또는 브랜드 검색..." autocomplete="off">
+            <button id="search-clear" class="search-clear-btn" aria-label="검색어 지우기">&times;</button>
+          </div>
+
+          <!-- Horizontal Categories Slider -->
+          <div class="categories-container">
+            <div class="categories-scroll" id="categories-tabs">
+              <button class="tab active" data-category="all">전체</button>
+              <button class="tab" data-category="shopping">쇼핑</button>
+              <button class="tab" data-category="portal">포털</button>
+              <button class="tab" data-category="finance">금융</button>
+              <button class="tab" data-category="lifestyle">라이프</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Event Cards List -->
+        <section class="events-section">
+          <div class="section-header">
+            <h2 id="list-title">전체 이벤트 목록</h2>
+            <button id="btn-toggle-completed" class="filter-toggle-btn">완료 숨기기</button>
+          </div>
+          
+          <div class="events-list" id="events-list">
+            <!-- Dynamically populated card templates -->
+            <div class="loading-skeleton">
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ANALYTICS VIEW -->
+      <div id="view-analytics" class="view-section hidden">
+        <section class="stats-card">
+          <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 6px;">누적 분석 스탯</h2>
+          <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
+            매일 출석체크 활동을 바탕으로 요약 통계를 제공합니다.
+          </div>
+        </section>
+
+        <div class="event-card-placeholder" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 16px; margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+          <span class="event-company">통계 개요</span>
+          <div style="width: 100%; display: flex; justify-content: space-between; font-size: 0.9rem; padding: 4px 0;">
+            <span>오늘 참여율</span>
+            <span style="font-weight: 700; color: var(--color-primary);" id="analytics-rate">0%</span>
+          </div>
+          <div style="width: 100%; display: flex; justify-content: space-between; font-size: 0.9rem; padding: 4px 0;">
+            <span>완료한 체크</span>
+            <span style="font-weight: 700;" id="analytics-completed">0개</span>
+          </div>
+          <div style="width: 100%; display: flex; justify-content: space-between; font-size: 0.9rem; padding: 4px 0;">
+            <span>남은 체크</span>
+            <span style="font-weight: 700; color: var(--color-success);" id="analytics-remaining">0개</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS VIEW -->
+      <div id="view-settings" class="view-section hidden">
+        <section class="stats-card">
+          <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 6px;">환경설정</h2>
+          <div style="font-size: 0.85rem; color: var(--text-muted); padding-bottom: 4px;">앱 동작 옵션을 세부 설정합니다.</div>
+        </section>
+
+        <div class="events-list" style="margin-top: 16px;">
+          <div class="event-card" id="btn-reset-data" style="cursor: pointer;">
+            <div class="event-logo" style="background: linear-gradient(135deg, #ef4444, #b91c1c); font-size: 0.9rem; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; flex-shrink: 0;">R</div>
+            <div class="event-info">
+              <span class="event-title" style="color: #ef4444;">오늘 기록 초기화</span>
+              <span class="event-company">진행한 모든 기록을 리셋합니다.</span>
+            </div>
+          </div>
+
+          <div class="event-card" style="pointer-events: none; opacity: 0.8;">
+            <div class="event-logo logo-general" style="width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; flex-shrink: 0;">V</div>
+            <div class="event-info">
+              <span class="event-title">버전 정보</span>
+              <span class="event-company">CheckGlow v1.0.0 (Release)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="app-nav">
+      <button class="nav-item active" data-tab="home">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <span>홈</span>
+      </button>
+      <button class="nav-item" id="nav-btn-analytics" data-tab="analytics">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        <span>스탯</span>
+      </button>
+      <button class="nav-item" id="nav-btn-settings" data-tab="settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>설정</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Settings / Detail Modals (Can be added later if needed) -->
+  
+  <script src="events.js"></script>
+</body>
+</html>
