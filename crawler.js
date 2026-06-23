@@ -141,6 +141,33 @@ function deduceCompany(domain) {
   return domain;
 }
 
+// Helper to extract real target URL, handling Ppomppu's link redirect proxy
+function extractTargetUrl(linkHref) {
+  if (!linkHref) return null;
+  if (linkHref.includes('s.ppomppu.co.kr')) {
+    try {
+      const urlObj = new URL(linkHref);
+      const targetParam = urlObj.searchParams.get('target');
+      if (targetParam) {
+        // Ppomppu base64 encodes the target URL when encode=on is set
+        const decoded = Buffer.from(targetParam, 'base64').toString('utf8');
+        if (decoded.startsWith('http')) {
+          return decoded;
+        }
+        return targetParam; // fallback if it wasn't base64
+      }
+    } catch (e) {
+      console.error(`⚠️ Failed to parse redirect URL: ${linkHref}, error: ${e.message}`);
+    }
+  }
+  
+  // If it's a direct external link, return as is
+  if (linkHref.startsWith('http') && !linkHref.includes('ppomppu.co.kr')) {
+    return linkHref;
+  }
+  return null;
+}
+
 // Scrape new attendance events from Ppomppu Event boards
 async function scrapeNewEvents() {
   console.log("Scraping Ppomppu Event boards for new daily check-ins (event2 & evt)...");
@@ -243,13 +270,16 @@ async function scrapeNewEvents() {
         }
       }
       
-      // 2. If no homepage link, scan post body for external links
+      // 2. If no homepage link, scan post body for external links or proxy links
       if (!targetUrl) {
-        $post('.wordbreak a, #writeContents a').each((i, el) => {
+        $post('.board-contents a, .wordbreak a, #writeContents a').each((i, el) => {
           const linkHref = $post(el).attr('href');
-          if (linkHref && linkHref.startsWith('http') && !linkHref.includes('ppomppu.co.kr')) {
-            targetUrl = linkHref;
-            return false; // break loop
+          if (linkHref) {
+            const extracted = extractTargetUrl(linkHref);
+            if (extracted) {
+              targetUrl = extracted;
+              return false; // break loop
+            }
           }
         });
       }
