@@ -143,106 +143,127 @@ function deduceCompany(domain) {
 
 // Scrape new attendance events from Ppomppu Event board
 async function scrapeNewEvents() {
-  console.log("Scraping Ppomppu Event board for new daily check-ins...");
+  console.log("Scraping Ppomppu Event board for new daily check-ins (Pages 1 to 5)...");
   const newEvents = [];
+  const postLinks = [];
+  const matchedPostIds = new Set();
   
-  try {
-    const res = await axios.get('https://www.ppomppu.co.kr/zboard/zboard.php?id=evt', {
-      responseType: 'arraybuffer',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
-    });
-    
-    // Decode EUC-KR HTML content
-    const html = iconv.decode(Buffer.from(res.data), 'euc-kr');
-    const $ = cheerio.load(html);
-    
-    const postLinks = [];
-    
-    // Select post title elements
-    $('td.list_title a').each((i, el) => {
-      const titleText = $(el).text().trim();
-      const href = $(el).attr('href');
+  const KEYWORDS = ["출석", "출체", "출첵", "매일", "룰렛", "데일리", "하루", "퀴즈"];
+  const NEGATIVE_KEYWORDS = ["종료", "마감", "종료예정", "종료됨", "끝"];
+
+  for (let page = 1; page <= 5; page++) {
+    console.log(`Fetching page ${page}...`);
+    try {
+      const res = await axios.get(`https://www.ppomppu.co.kr/zboard/zboard.php?id=evt&page=${page}`, {
+        responseType: 'arraybuffer',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
+        timeout: 10000
+      });
       
-      // Match keywords indicating attendance checks
-      if ((titleText.includes("출석") || titleText.includes("출체") || titleText.includes("출첵") || titleText.includes("매일")) && href) {
-        const fullUrl = url.resolve('https://www.ppomppu.co.kr/zboard/zboard.php?id=evt', href);
-        // Extract post ID
-        const urlParams = new URLSearchParams(fullUrl.split('?')[1]);
-        const postId = urlParams.get('no');
+      // Decode EUC-KR HTML content
+      const html = iconv.decode(Buffer.from(res.data), 'euc-kr');
+      const $ = cheerio.load(html);
+      
+      // Select post title elements
+      $('td.list_title a').each((i, el) => {
+        const titleText = $(el).text().trim();
+        const href = $(el).attr('href');
         
-        if (postId) {
-          postLinks.push({ id: postId, title: titleText, url: fullUrl });
+        if (!href) return;
+        
+        // Match keywords indicating attendance checks
+        const hasKeyword = KEYWORDS.some(k => titleText.includes(k));
+        const hasNegativeKeyword = NEGATIVE_KEYWORDS.some(k => titleText.includes(k));
+        
+        if (hasKeyword && !hasNegativeKeyword) {
+          const fullUrl = url.resolve('https://www.ppomppu.co.kr/zboard/zboard.php?id=evt', href);
+          // Extract post ID
+          const urlParams = new URLSearchParams(fullUrl.split('?')[1]);
+          const postId = urlParams.get('no');
+          
+          if (postId && !matchedPostIds.has(postId)) {
+            matchedPostIds.add(postId);
+            postLinks.push({ id: postId, title: titleText, url: fullUrl });
+          }
+        }
+      });
+    } catch (pageErr) {
+      console.error(`⚠️ Failed to fetch page ${page}: ${pageErr.message}`);
+    }
+    // Polite delay between page requests
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  console.log(`Found ${postLinks.length} matching attendance posts across 5 pages.`);
+  
+  // Scrape details for up to 35 matching threads to prevent rate limiting
+  const maxThreadsToScrape = 35;
+  const targetPosts = postLinks.slice(0, maxThreadsToScrape);
+  
+  for (const post of targetPosts) {
+    console.log(`Parsing details of post: "${post.title}"...`);
+    try {
+      const postRes = await axios.get(post.url, {
+        responseType: 'arraybuffer',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
+        timeout: 8000
+      });
+      
+      const postHtml = iconv.decode(Buffer.from(postRes.data), 'euc-kr');
+      const $post = cheerio.load(postHtml);
+      
+      let targetUrl = null;
+      
+      // 1. Try to find the homepage redirect link
+      const homepageBtn = $post('a[onclick*="view_homepage"]');
+      if (homepageBtn.length > 0) {
+        const onclickAttr = homepageBtn.attr('onclick');
+        const match = onclickAttr.match(/view_homepage\.php\?no=\d+&id=\w+/);
+        if (match) {
+          const redirectPath = match[0];
+          const fullRedirectUrl = `https://www.ppomppu.co.kr/zboard/${redirectPath}`;
+          console.log(`Found homepage redirector: ${fullRedirectUrl}`);
+          targetUrl = await resolvePpomppuRedirect(fullRedirectUrl);
         }
       }
-    });
-
-    console.log(`Found ${postLinks.length} matching attendance posts on frontpage.`);
-    
-    // Scrape details for up to 5 matching threads to prevent rate limiting
-    for (const post of postLinks.slice(0, 5)) {
-      console.log(`Parsing details of post: "${post.title}"...`);
-      try {
-        const postRes = await axios.get(post.url, {
-          responseType: 'arraybuffer',
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      
+      // 2. If no homepage link, scan post body for external links
+      if (!targetUrl) {
+        $post('.wordbreak a, #writeContents a').each((i, el) => {
+          const linkHref = $post(el).attr('href');
+          if (linkHref && linkHref.startsWith('http') && !linkHref.includes('ppomppu.co.kr')) {
+            targetUrl = linkHref;
+            return false; // break loop
           }
         });
-        
-        const postHtml = iconv.decode(Buffer.from(postRes.data), 'euc-kr');
-        const $post = cheerio.load(postHtml);
-        
-        let targetUrl = null;
-        
-        // 1. Try to find the homepage redirect link
-        const homepageBtn = $post('a[onclick*="view_homepage"]');
-        if (homepageBtn.length > 0) {
-          const onclickAttr = homepageBtn.attr('onclick');
-          const match = onclickAttr.match(/view_homepage\.php\?no=\d+&id=\w+/);
-          if (match) {
-            const redirectPath = match[0];
-            const fullRedirectUrl = `https://www.ppomppu.co.kr/zboard/${redirectPath}`;
-            console.log(`Found homepage redirector: ${fullRedirectUrl}`);
-            targetUrl = await resolvePpomppuRedirect(fullRedirectUrl);
-          }
-        }
-        
-        // 2. If no homepage link, scan post body for external links
-        if (!targetUrl) {
-          $post('.wordbreak a, #writeContents a').each((i, el) => {
-            const linkHref = $post(el).attr('href');
-            if (linkHref && linkHref.startsWith('http') && !linkHref.includes('ppomppu.co.kr')) {
-              targetUrl = linkHref;
-              return false; // break loop
-            }
-          });
-        }
-
-        if (targetUrl) {
-          console.log(`   Discovered target event URL: ${targetUrl}`);
-          const parsedTarget = url.parse(targetUrl);
-          const domain = parsedTarget.hostname || '';
-          const company = deduceCompany(domain);
-          const category = deduceCategory(domain);
-          
-          newEvents.push({
-            id: `scraped-${post.id}`,
-            title: post.title.replace(/\[[^\]]+\]/g, '').trim(), // Clean bracket tags like [출석]
-            company: company,
-            category: category,
-            url: targetUrl,
-            reward: "포인트 / 이벤트 리워드",
-            logo: company.charAt(0)
-          });
-        }
-      } catch (err) {
-        console.error(`⚠️ Failed to parse thread ${post.id}: ${err.message}`);
       }
+
+      if (targetUrl) {
+        console.log(`   Discovered target event URL: ${targetUrl}`);
+        const parsedTarget = url.parse(targetUrl);
+        const domain = parsedTarget.hostname || '';
+        const company = deduceCompany(domain);
+        const category = deduceCategory(domain);
+        
+        newEvents.push({
+          id: `scraped-${post.id}`,
+          title: post.title.replace(/\[[^\]]+\]/g, '').trim(), // Clean bracket tags like [출석]
+          company: company,
+          category: category,
+          url: targetUrl,
+          reward: "포인트 / 이벤트 리워드",
+          logo: company.charAt(0)
+        });
+      }
+    } catch (err) {
+      console.error(`⚠️ Failed to parse thread ${post.id}: ${err.message}`);
     }
-  } catch (err) {
-    console.error(`⚠️ Failed to scrape Ppomppu board: ${err.message}`);
+    // Polite delay between thread detail requests
+    await new Promise(resolve => setTimeout(resolve, 300));
   }
   
   return newEvents;
@@ -289,7 +310,15 @@ async function run() {
   const activeEvents = [];
 
   for (const event of mergedEvents) {
+    const isDefaultEvent = !event.id.startsWith('scraped-');
     console.log(`Checking [${event.company}] ${event.title}...`);
+
+    if (isDefaultEvent) {
+      console.log(`   🛡️ Curated/default event. Bypassing health check removal.`);
+      activeEvents.push(event);
+      continue;
+    }
+
     try {
       const res = await checkUrlHealth(event.url);
       
