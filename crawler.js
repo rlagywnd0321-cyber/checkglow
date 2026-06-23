@@ -141,62 +141,74 @@ function deduceCompany(domain) {
   return domain;
 }
 
-// Scrape new attendance events from Ppomppu Event board
+// Scrape new attendance events from Ppomppu Event boards
 async function scrapeNewEvents() {
-  console.log("Scraping Ppomppu Event board for new daily check-ins (Pages 1 to 5)...");
+  console.log("Scraping Ppomppu Event boards for new daily check-ins (event2 & evt)...");
   const newEvents = [];
   const postLinks = [];
   const matchedPostIds = new Set();
   
   const KEYWORDS = ["출석", "출체", "출첵", "매일", "룰렛", "데일리", "하루", "퀴즈"];
   const NEGATIVE_KEYWORDS = ["종료", "마감", "종료예정", "종료됨", "끝"];
+  
+  // Scrape event2 (community-driven Event board) and evt (Official Event board)
+  const boards = [
+    { id: 'event2', pages: 5 },
+    { id: 'evt', pages: 2 }
+  ];
 
-  for (let page = 1; page <= 5; page++) {
-    console.log(`Fetching page ${page}...`);
-    try {
-      const res = await axios.get(`https://www.ppomppu.co.kr/zboard/zboard.php?id=evt&page=${page}`, {
-        responseType: 'arraybuffer',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        },
-        timeout: 10000
-      });
-      
-      // Decode EUC-KR HTML content
-      const html = iconv.decode(Buffer.from(res.data), 'euc-kr');
-      const $ = cheerio.load(html);
-      
-      // Select post title elements
-      $('td.list_title a').each((i, el) => {
-        const titleText = $(el).text().trim();
-        const href = $(el).attr('href');
+  for (const board of boards) {
+    console.log(`Starting to scrape Ppomppu board "${board.id}"...`);
+    for (let page = 1; page <= board.pages; page++) {
+      console.log(`   Fetching ${board.id} page ${page}...`);
+      try {
+        const res = await axios.get(`https://www.ppomppu.co.kr/zboard/zboard.php?id=${board.id}&page=${page}`, {
+          responseType: 'arraybuffer',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          },
+          timeout: 10000
+        });
         
-        if (!href) return;
+        // Decode EUC-KR HTML content
+        const html = iconv.decode(Buffer.from(res.data), 'euc-kr');
+        const $ = cheerio.load(html);
         
-        // Match keywords indicating attendance checks
-        const hasKeyword = KEYWORDS.some(k => titleText.includes(k));
-        const hasNegativeKeyword = NEGATIVE_KEYWORDS.some(k => titleText.includes(k));
-        
-        if (hasKeyword && !hasNegativeKeyword) {
-          const fullUrl = url.resolve('https://www.ppomppu.co.kr/zboard/zboard.php?id=evt', href);
-          // Extract post ID
-          const urlParams = new URLSearchParams(fullUrl.split('?')[1]);
-          const postId = urlParams.get('no');
+        // Select post title elements
+        $('td.list_title a').each((i, el) => {
+          const titleText = $(el).text().trim();
+          const href = $(el).attr('href');
           
-          if (postId && !matchedPostIds.has(postId)) {
-            matchedPostIds.add(postId);
-            postLinks.push({ id: postId, title: titleText, url: fullUrl });
+          if (!href) return;
+          
+          // Match keywords indicating attendance checks
+          const hasKeyword = KEYWORDS.some(k => titleText.includes(k));
+          const hasNegativeKeyword = NEGATIVE_KEYWORDS.some(k => titleText.includes(k));
+          
+          if (hasKeyword && !hasNegativeKeyword) {
+            const fullUrl = url.resolve(`https://www.ppomppu.co.kr/zboard/zboard.php?id=${board.id}`, href);
+            // Extract post ID
+            const urlParams = new URLSearchParams(fullUrl.split('?')[1]);
+            const postId = urlParams.get('no');
+            
+            if (postId) {
+              const uniqueId = `${board.id}-${postId}`;
+              if (!matchedPostIds.has(uniqueId)) {
+                matchedPostIds.add(uniqueId);
+                postLinks.push({ id: uniqueId, title: titleText, url: fullUrl });
+              }
+            }
           }
-        }
-      });
-    } catch (pageErr) {
-      console.error(`⚠️ Failed to fetch page ${page}: ${pageErr.message}`);
+        });
+      } catch (pageErr) {
+        console.error(`⚠️ Failed to fetch ${board.id} page ${page}: ${pageErr.message}`);
+      }
+      // Polite delay between page requests
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
-    // Polite delay between page requests
-    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  console.log(`Found ${postLinks.length} matching attendance posts across 5 pages.`);
+  console.log(`Found ${postLinks.length} matching attendance posts across both boards.`);
   
   // Scrape details for up to 35 matching threads to prevent rate limiting
   const maxThreadsToScrape = 35;
