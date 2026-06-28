@@ -151,5 +151,14 @@
     "url": "https://www.playstory.co.kr/promotions/link/60",
     "reward": "포인트 / 이벤트 리워드",
     "logo": "C"
+  },
+  {
+    "id": "scraped-event2-12629",
+    "title": "",
+    "company": "KAKAO",
+    "category": "finance",
+    "url": "https://pf.kakao.com/_DHwbC",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "K"
   }
 ]
