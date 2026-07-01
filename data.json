@@ -151,5 +151,14 @@
     "url": "https://pf.kakao.com/_DHwbC",
     "reward": "포인트 / 이벤트 리워드",
     "logo": "K"
+  },
+  {
+    "id": "scraped-event2-106754",
+    "title": "한입 퀴즈 참여 인증 이벤트(6.17~6.26)",
+    "company": "GO",
+    "category": "lifestyle",
+    "url": "https://www.foodsafetykorea.go.kr/portal/board/boardDetail.do?menu_no=4447&menu_grp=MENU_NEW05&bbs_no=eventbbs&ntctxt_no=1150873",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "G"
   }
 ]
