@@ -160,5 +160,23 @@
     "url": "https://www.foodsafetykorea.go.kr/portal/board/boardDetail.do?menu_no=4447&menu_grp=MENU_NEW05&bbs_no=eventbbs&ntctxt_no=1150873",
     "reward": "포인트 / 이벤트 리워드",
     "logo": "G"
+  },
+  {
+    "id": "scraped-event2-106891",
+    "title": "인스타그램 이벤트 '초복맞이 통닭 종이접기 퀴즈'",
+    "company": "CO",
+    "category": "lifestyle",
+    "url": "https://www.ppomppu.co.kr/zboard/zboard.php?id=relay",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "C"
+  },
+  {
+    "id": "scraped-event2-106888",
+    "title": "제헌절 퀴즈 이벤트 모바일 문화상품권 추첨",
+    "company": "GO",
+    "category": "lifestyle",
+    "url": "https://kids.ccourt.go.kr/site/kids/main.do",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "G"
   }
 ]
