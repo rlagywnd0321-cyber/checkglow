@@ -187,5 +187,23 @@
     "url": "https://naver.me/G3vQPd4V",
     "reward": "포인트 / 이벤트 리워드",
     "logo": "네"
+  },
+  {
+    "id": "scraped-event2-106970",
+    "title": "매일 영어 챌린지 유튜브 구독 이벤트 - 스타벅스 상품권, 다이소 상품권 (~7/31)",
+    "company": "YOUTU",
+    "category": "lifestyle",
+    "url": "https://youtu.be/oEeaZEhNmyE?si=dP8nSaPDZcjoBhQi",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "Y"
+  },
+  {
+    "id": "scraped-event2-106958",
+    "title": "국민체육진흥공단 경륜경정 공식 SNS 퀴즈 이벤트 (~7/17)",
+    "company": "INSTAGRAM",
+    "category": "lifestyle",
+    "url": "https://www.instagram.com/p/DaUnaJOD_VT/",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "I"
   }
 ]
