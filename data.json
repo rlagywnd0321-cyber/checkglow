@@ -205,5 +205,32 @@
     "url": "https://www.instagram.com/p/DaUnaJOD_VT/",
     "reward": "포인트 / 이벤트 리워드",
     "logo": "I"
+  },
+  {
+    "id": "scraped-event2-106990",
+    "title": "유튜브 구독 이벤트 - 스타벅스 상품권, 다이소 상품권 1만원 (~7/31)",
+    "company": "YOUTUBE",
+    "category": "lifestyle",
+    "url": "https://youtube.com/shorts/g5KyXfCmyo4?si=q6uV-g3SC82snUSI",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "Y"
+  },
+  {
+    "id": "scraped-event2-106982",
+    "title": "하루당차 버스 광고 인증샷 이벤트 (~7/19 (30명)",
+    "company": "INSTAGRAM",
+    "category": "lifestyle",
+    "url": "https://www.instagram.com/kefcarewell/",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "I"
+  },
+  {
+    "id": "scraped-event2-106977",
+    "title": "26년국토교통 통계누리 퀴즈 이벤트",
+    "company": "GO",
+    "category": "lifestyle",
+    "url": "https://stat.molit.go.kr/portal/notice/noticeView.do?page_no=1&page_row=10&hNum=285&gubun=1&keyword=",
+    "reward": "포인트 / 이벤트 리워드",
+    "logo": "G"
   }
 ]
